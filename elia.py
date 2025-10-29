@@ -4,6 +4,9 @@ import pandas as pd
 from datetime import datetime, timedelta, timezone
 
 def next_quarter_iso():
+    return next_quarter().isoformat()
+
+def next_quarter():
     now = datetime.now(timezone.utc)
     # Determine the next quarter
     next_minute = ((now.minute // 15) + 1) * 15
@@ -13,7 +16,8 @@ def next_quarter_iso():
                      + timedelta(hours=1))
     else:
         next_time = now.replace(minute=next_minute, second=0, microsecond=0)
-    return next_time.isoformat()
+    return next_time
+
 
 
 def fetch_elia_dataset(dataset_id: str, select: str = None, where: str = '1=1', limit: int = 10000, **params) -> pd.DataFrame:
@@ -92,8 +96,8 @@ igccvolumedown: MW
 afrrvolumeup:   MW
 afrrvolumedown: MW
 """
-def get_last_imbalance():
-    current_imb = fetch_elia_dataset("ods169", limit=1, select="datetime, systemimbalance, afrrvolumeup, afrrvolumedown, igccvolumeup,  igccvolumedown")
+def get_last_imbalance(datetime:str):
+    current_imb = fetch_elia_dataset("ods169", limit=1, where=f"datetime < date'{datetime}'", select="datetime, systemimbalance, afrrvolumeup, afrrvolumedown, igccvolumeup,  igccvolumedown")
 
 
     combined_grouped = current_imb.groupby('datetime').agg({
