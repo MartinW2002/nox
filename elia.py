@@ -1,6 +1,21 @@
 import requests
 import pandas as pd
 
+from datetime import datetime, timedelta, timezone
+
+def next_quarter_iso():
+    now = datetime.now(timezone.utc)
+    # Determine the next quarter
+    next_minute = ((now.minute // 15) + 1) * 15
+    if next_minute == 60:
+        # Move to the next hour
+        next_time = (now.replace(minute=0, second=0, microsecond=0) 
+                     + timedelta(hours=1))
+    else:
+        next_time = now.replace(minute=next_minute, second=0, microsecond=0)
+    return next_time.isoformat()
+
+
 def fetch_elia_dataset(dataset_id: str, select: str = None, where: str = '1=1', limit: int = 10000, **params) -> pd.DataFrame:
     """
     Fetch data from Elia Open Data API for a given dataset identifier.
@@ -91,14 +106,27 @@ def get_last_imbalance():
 
     return combined_grouped
 
+def get_day_ahead(dt:str): 
+    df = pd.read_csv("./input/day_ahead_29-10.csv", sep=';')
+    df['price'] = df['price'].str.replace(',', '.').astype(float)
+
+    time_str = datetime.fromisoformat(dt).strftime("%H:%M")
+
+    row = df.loc[df['time'] == time_str, 'price']
+    return row.iloc[0]
+
+
 if __name__ == "__main__":
-    datetime = '2025-10-29T17:00:00+00:00'
+    dt = next_quarter_iso()
+    print(dt)
     imbalance = get_last_imbalance()
-    total_wind = get_total_wind(datetime)
-    total_solar = get_total_solar(datetime)
+    total_wind = get_total_wind(dt)
+    total_solar = get_total_solar(dt)
+    day_ahead = get_day_ahead(dt)
     print(f'imbalance: {imbalance}')
     print(f'total_wind: {total_wind}')
     print(f'total_solar: {total_solar}')
+    print(f'day_ahead: {day_ahead}')
 
 
     
