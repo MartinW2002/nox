@@ -1,7 +1,7 @@
 import requests
 import pandas as pd
 
-def fetch_elia_dataset(dataset_id: str, select: str = None, where: str = '1=1', limit: int = 10000, **params):
+def fetch_elia_dataset(dataset_id: str, select: str = None, where: str = '1=1', limit: int = 10000, **params) -> pd.DataFrame:
     """
     Fetch data from Elia Open Data API for a given dataset identifier.
     Args:
@@ -15,7 +15,6 @@ def fetch_elia_dataset(dataset_id: str, select: str = None, where: str = '1=1', 
     if (select == None):
         query = {
         "limit": limit,
-        # you might want to order by datetime descending:
         "order_by": "datetime DESC",
         "where": where
         }
@@ -23,7 +22,6 @@ def fetch_elia_dataset(dataset_id: str, select: str = None, where: str = '1=1', 
         query = {
             "limit": limit,
             "select": select,
-            # you might want to order by datetime descending:
             "order_by": "datetime DESC",
             "where": where
         }
@@ -39,6 +37,15 @@ def fetch_elia_dataset(dataset_id: str, select: str = None, where: str = '1=1', 
     # flatten into DataFrame
     df = pd.json_normalize(records)
     return df
+
+def get_total_wind():
+    wind_wallonia = fetch_elia_dataset("ods086", limit=10, where="region='Wallonia'", select="datetime,mostrecentforecast") 
+    wind_flanders = fetch_elia_dataset("ods086", limit=10, where="region='Flanders'", select="datetime,mostrecentforecast")
+    wind_federal = fetch_elia_dataset("ods086", limit=10, where="region='Federal'", select="datetime,mostrecentforecast")
+
+    combined = pd.concat([wind_wallonia, wind_flanders, wind_federal])
+
+    return combined.groupby('datetime')['mostrecentforecast'].sum()
 
 if __name__ == "__main__":
     # Example 1: Imbalance prices per quarter-hour (dataset ods134) :contentReference[oaicite:1]{index=1}
@@ -70,9 +77,10 @@ if __name__ == "__main__":
     # print("Current Imb:")
     # print(current_imb.head())
 
-    load_live_forecast = fetch_elia_dataset("ods002", limit=100, select="datetime, mostrecentforecast")
-    print("Load live:")
-    print(load_live_forecast)
+    get_total_wind()
+    # load_live_forecast = fetch_elia_dataset("ods002", limit=100, select="datetime, mostrecentforecast")
+    # print("Load live:")
+    # print(load_live_forecast)
 
 
 
@@ -80,3 +88,7 @@ if __name__ == "__main__":
     # df_sysimb = fetch_elia_dataset("ods126", limit=5000)
     # print("System imbalance sample:")
     # print(df_sysimb.head())
+
+
+
+    
