@@ -28,6 +28,7 @@ def fetch_elia_dataset(dataset_id: str, select: str = None, where: str = '1=1', 
     # add any extra params
     query.update(params)
     resp = requests.get(url, params=query)
+    print(resp.url)
     resp.raise_for_status()
     js = resp.json()
     # the data is in js["results"] or js["records"] depending on API version
@@ -38,57 +39,74 @@ def fetch_elia_dataset(dataset_id: str, select: str = None, where: str = '1=1', 
     df = pd.json_normalize(records)
     return df
 
-def get_total_wind():
-    wind_wallonia = fetch_elia_dataset("ods086", limit=10, where="region='Wallonia'", select="datetime,mostrecentforecast") 
-    wind_flanders = fetch_elia_dataset("ods086", limit=10, where="region='Flanders'", select="datetime,mostrecentforecast")
-    wind_federal = fetch_elia_dataset("ods086", limit=10, where="region='Federal'", select="datetime,mostrecentforecast")
+
+"""
+Merk op: Belgium is een aparte entiteit en niet de som van de rest
+"""
+def get_total_solar(datetime: str):
+    solar_prod = fetch_elia_dataset("ods087", limit=100, where=f"datetime = date'{datetime}'", select="datetime,mostrecentforecast,realtime,dayaheadforecast,region") 
+
+    combined_grouped = solar_prod.groupby('datetime').agg({
+            'mostrecentforecast': 'sum',
+            'realtime': 'sum',
+            'dayaheadforecast': 'sum'
+        }).reset_index()
+    
+    return combined_grouped
+    
+def get_total_wind(datetime: str):
+    wind_wallonia = fetch_elia_dataset("ods086", limit=100, where=f"datetime = date'{datetime}' AND region='Wallonia'", select="datetime,mostrecentforecast,realtime,dayaheadforecast") 
+    wind_flanders = fetch_elia_dataset("ods086", limit=100, where=f"datetime = date'{datetime}' AND region='Flanders'", select="datetime,mostrecentforecast,realtime,dayaheadforecast")
+    wind_federal = fetch_elia_dataset("ods086", limit=100, where=f"datetime = date'{datetime}' AND region='Federal'", select="datetime,mostrecentforecast,realtime,dayaheadforecast")
 
     combined = pd.concat([wind_wallonia, wind_flanders, wind_federal])
 
-    return combined.groupby('datetime')['mostrecentforecast'].sum()
+    combined_grouped = combined.groupby('datetime').agg({
+        'mostrecentforecast': 'sum',
+        'realtime': 'sum',
+        'dayaheadforecast': 'sum'
+    }).reset_index()
+
+    return combined_grouped
+    
+
+"""
+Systemimbalance:
+igccvolumeup:   MW
+igccvolumedown: MW
+afrrvolumeup:   MW
+afrrvolumedown: MW
+"""
+def get_imbalance(datetime:str):
+    current_imb = fetch_elia_dataset("ods169", limit=100, where=f"datetime = date'{datetime}'", select="datetime, systemimbalance, afrrvolumeup, afrrvolumedown, igccvolumeup,  igccvolumedown")
+
+
+    combined_grouped = current_imb.groupby('datetime').agg({
+        'systemimbalance': 'sum',
+        'igccvolumeup': 'sum',
+        'igccvolumedown': 'sum',
+        'afrrvolumeup': 'sum',
+        'afrrvolumedown': 'sum'
+    }).reset_index()
+
+    return combined_grouped
 
 if __name__ == "__main__":
-    # Example 1: Imbalance prices per quarter-hour (dataset ods134) :contentReference[oaicite:1]{index=1}
-    # df_qh = fetch_elia_dataset("ods134", limit=5000)
-    # print("Quarter-hour imbalance prices sample:")
-    # print(df_qh.head())
+    df_086 = pd.read_csv('input/ods086.csv')
+    df_087 = pd.read_csv('input/ods087.csv')
+    df_169 = pd.read_csv('input/ods169.csv')
 
-    # df_min = fetch_elia_dataset("ods161", limit=1) # Live minute per minute
-    # print("Minute-level imbalance prices sample:")
-    # print(df_min.head())
+    df = pd.read_csv('data/imbalance_actual.csv')
+    df['datetime_utc'] = pd.to_datetime(df['datetime_utc'])
 
-    # wind_prod = fetch_elia_dataset("ods086", limit=10, where="region='Wallonia'") # 031
-    # print("Wind prod:")
-    # print(wind_prod.head())
+    datetime_list = [dt.strftime('%Y-%m-%dT%H:%M:%S+00:00') for dt in df['datetime_utc']]
 
-    # solar_prod = fetch_elia_dataset("ods087", limit=1) # 031
-    # print("Solar prod:")
-    # print(solar_prod.head())
+    print(len(datetime_list))
+    
+    first_time = datetime_list[0]
+    last_time = datetime_list[-1]
 
-    # total_gen = fetch_elia_dataset("ods201", limit=1)
-    # print("Total Gen:")
-    # print(total_gen.head())
-
-    # current_imb = fetch_elia_dataset("ods169", limit=1, select="datetime, systemimbalance, afrrvolumeup, afrrvolumedown, igccvolumeup,  igccvolumedown")
-    # print("Current Imb:")
-    # print(current_imb.head())
-
-    # forecast_imb = fetch_elia_dataset("ods136", limit=1, select="datetime, systemimbalance, afrrvolumeup, afrrvolumedown, igccvolumeup,  igccvolumedown")
-    # print("Current Imb:")
-    # print(current_imb.head())
-
-    get_total_wind()
-    # load_live_forecast = fetch_elia_dataset("ods002", limit=100, select="datetime, mostrecentforecast")
-    # print("Load live:")
-    # print(load_live_forecast)
-
-
-
-    # Example 3: Current system imbalance (e.g., dataset ods126) :contentReference[oaicite:3]{index=3}
-    # df_sysimb = fetch_elia_dataset("ods126", limit=5000)
-    # print("System imbalance sample:")
-    # print(df_sysimb.head())
-
+    get_imbalance(datetime_list[0])
 
 
     
