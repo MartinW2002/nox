@@ -84,7 +84,7 @@ def train_model(outfile:str):
     X_train, X_test, y_train, y_test = train_test_split(
         df[features],
         df[target],
-        test_size=0.1,
+        test_size=0.2,
         shuffle=False
     )
 
@@ -103,7 +103,7 @@ def train_model(outfile:str):
         "lambda_l1": 0.5,
         "lambda_l2": 0.5,
         "min_data_in_leaf": 50,
-        "max_depth": 8,
+        "max_depth": 10,
         "verbose": -1
     }
 

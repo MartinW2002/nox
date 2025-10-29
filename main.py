@@ -2,6 +2,7 @@ import train_model
 import predict
 import datetime
 import elia 
+from datetime import timezone
 
 def main():
     print("What do you want to do?")
@@ -29,7 +30,7 @@ def main():
             custom_time_str = input("Enter the custom time (HH:MM): ").strip()
             hour, minute = map(int, custom_time_str.split(":"))
             today = datetime.date.today()
-            target_time = datetime.datetime(today.year, today.month, today.day, hour, minute)
+            target_time = datetime.datetime(today.year, today.month, today.day, hour, minute, tzinfo=timezone.utc)
         else:
             print("Invalid option.")
             return
