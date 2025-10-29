@@ -18,6 +18,11 @@ next_quarter = imbalance["datetime"].iloc[0].ceil("15min")
 # Select weather row for that timestamp
 weather_row = weather[weather["datetime"] == next_quarter].iloc[0]
 
+prices = pd.read_csv("./input/day_ahead_29-10.csv", sep=";")  # adjust path if needed
+prices["price"] = prices["price"].str.replace(",", ".").astype(float)
+
+price_eur_mwh_dam = elia.get_day_ahead(elia.next_quarter_iso())
+
 # Build a single-row DataFrame for prediction
 new_data = pd.DataFrame([{
     "System imbalance": imbalance["systemimbalance"].iloc[0],
@@ -28,7 +33,7 @@ new_data = pd.DataFrame([{
     "direct_radiation": weather_row["direct_radiation"],
     "hour": next_quarter.hour + next_quarter.minute / 60,
     "weekend": int(next_quarter.dayofweek in [5, 6]),
-    "price_eur_mwh_dam": 0
+    "price_eur_mwh_dam": price_eur_mwh_dam
 }])
 
 # Predict
