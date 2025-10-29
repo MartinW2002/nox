@@ -22,22 +22,20 @@ params = {
     # "timezone": "Europe/Brussels",
 }
 
-response = requests.get(url, params=params)
-response.raise_for_status()
-data = response.json()
+def weather_data():
+    response = requests.get(url, params=params)
+    response.raise_for_status()
+    data = response.json()
 
-print(data)
+    df = pd.DataFrame({
+        "datetime": data["minutely_15"]["time"],
+        "wind_speed_10m": data["minutely_15"]["wind_speed_10m"],
+        "direct_radiation": data["minutely_15"]["direct_radiation"]
+    })
 
-df = pd.DataFrame({
-    "datetime": data["minutely_15"]["time"],
-    "wind_speed_10m": data["minutely_15"]["wind_speed_10m"],
-    "direct_radiation": data["minutely_15"]["direct_radiation"]
-})
+    # Convert datetime column to actual datetime objects
+    df["datetime"] = pd.to_datetime(df["datetime"])
 
-# Convert datetime column to actual datetime objects
-df["datetime"] = pd.to_datetime(df["datetime"])
-
-# Optionally set datetime as index
-df = df.set_index("datetime")
-
-print(df.head())
+    # Optionally set datetime as index
+    # df = df.set_index("datetime")
+    return df

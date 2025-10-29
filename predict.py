@@ -88,4 +88,4 @@ y_pred = model.predict(X_test, num_iteration=model.best_iteration)
 mae = mean_absolute_error(y_test, y_pred)
 print(f"MAE: {mae:.2f}")
 
-model.save_model('out/model1.txt')
+model.save_model('./out/model2.txt')
