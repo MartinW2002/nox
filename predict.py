@@ -36,13 +36,12 @@ df = pd.merge_asof(
     direction="nearest",
 )
 
-print(weather.head())
-print(imbalance.head())
+print(df.head())
 # --- Feature engineering ---
 df["hour"] = df["datetime"].dt.hour + df["datetime"].dt.minute / 60  # fractional hour (15-min steps)
 df["weekend"] = df["datetime"].dt.dayofweek.isin([5, 6]).astype(int)  # Sat/Sun = 1 else 0
 
-features = ["System imbalance", "wind_speed_10m", "direct_radiation", "hour", "weekend"]
+features = ["System imbalance", "IGCC+", "aFRR -", "aFRR +", "wind_speed_10m", "direct_radiation", "hour", "weekend"]
 target = "price_eur_mwh"
 
 # Drop missing rows
@@ -82,14 +81,3 @@ model = lgb.train(
 y_pred = model.predict(X_test, num_iteration=model.best_iteration)
 mae = mean_absolute_error(y_test, y_pred)
 print(f"MAE: {mae:.2f}")
-
-# --- Predict example future point ---
-future_df = pd.DataFrame({
-    "imbalance_mwh": [120],
-    "windspeed": [7],
-    "radiation": [300],
-    "hour": [14.25],  # 14:15
-    "weekend": [0]
-})
-future_pred = model.predict(future_df)
-print("Predicted imbalance price:", future_pred[0])
