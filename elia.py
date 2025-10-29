@@ -77,8 +77,8 @@ igccvolumedown: MW
 afrrvolumeup:   MW
 afrrvolumedown: MW
 """
-def get_imbalance(datetime:str):
-    current_imb = fetch_elia_dataset("ods169", limit=100, where=f"datetime = date'{datetime}'", select="datetime, systemimbalance, afrrvolumeup, afrrvolumedown, igccvolumeup,  igccvolumedown")
+def get_last_imbalance():
+    current_imb = fetch_elia_dataset("ods169", limit=1, select="datetime, systemimbalance, afrrvolumeup, afrrvolumedown, igccvolumeup,  igccvolumedown")
 
 
     combined_grouped = current_imb.groupby('datetime').agg({
@@ -92,21 +92,13 @@ def get_imbalance(datetime:str):
     return combined_grouped
 
 if __name__ == "__main__":
-    df_086 = pd.read_csv('input/ods086.csv')
-    df_087 = pd.read_csv('input/ods087.csv')
-    df_169 = pd.read_csv('input/ods169.csv')
-
-    df = pd.read_csv('data/imbalance_actual.csv')
-    df['datetime_utc'] = pd.to_datetime(df['datetime_utc'])
-
-    datetime_list = [dt.strftime('%Y-%m-%dT%H:%M:%S+00:00') for dt in df['datetime_utc']]
-
-    print(len(datetime_list))
-    
-    first_time = datetime_list[0]
-    last_time = datetime_list[-1]
-
-    get_imbalance(datetime_list[0])
+    datetime = '2025-10-29T17:00:00+00:00'
+    imbalance = get_last_imbalance()
+    total_wind = get_total_wind(datetime)
+    total_solar = get_total_solar(datetime)
+    print(f'imbalance: {imbalance}')
+    print(f'total_wind: {total_wind}')
+    print(f'total_solar: {total_solar}')
 
 
     
