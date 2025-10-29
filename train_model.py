@@ -95,15 +95,15 @@ def train_model(outfile:str):
     params = {
         "objective": "regression",
         "metric": "mae",
-        "learning_rate": 0.03,
-        "num_leaves": 63,
+        "learning_rate": 0.05,
+        "num_leaves": 255,
         "feature_fraction": 0.8,
         "bagging_fraction": 0.8,
         "bagging_freq": 5,
-        "lambda_l1": 0.5,
-        "lambda_l2": 0.5,
-        "min_data_in_leaf": 50,
-        "max_depth": 10,
+        "lambda_l1": 0.2,
+        "lambda_l2": 0.2,
+        "min_data_in_leaf": 30,
+        "max_depth": -1,
         "verbose": -1
     }
 
