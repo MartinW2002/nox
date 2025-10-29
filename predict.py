@@ -1,22 +1,24 @@
 import pandas as pd
 import lightgbm as lgb
 from sklearn.model_selection import train_test_split
-from sklearn.metrics import mean_absolute_error
+from sklearn.metrics import mean_absolute_error, mean_absolute_percentage_error
 import weather_old
 
 # --- Load and merge data ---
 imbalance = pd.read_csv("./input/historical_imbalance.csv", sep=";")  # columns: datetime, imbalance_mwh, price
 imbalance_actual = pd.read_csv("./data/imbalance_actual.csv")  # columns: datetime, imbalance_mwh, price
+historical_dam = pd.read_csv("./input/historical_dam.csv") # 
 weather = weather_old.weather_data()  # columns: datetime, windspeed, radiation
 
 # Ensure datetime alignment
 imbalance["datetime"] = pd.to_datetime(imbalance["Datetime"], utc=True, errors="coerce")
 weather["datetime"] = pd.to_datetime(weather["datetime"], utc=True, errors="coerce")
 imbalance_actual["datetime"] = pd.to_datetime(imbalance_actual["datetime_utc"], utc=True, errors="coerce")
+historical_dam["datetime"] = pd.to_datetime(historical_dam["datetime_utc"], utc=True, errors="coerce")
 
 # Merge on nearest timestamp (15-min data)
 # --- Ensure datetime column and proper dtype ---
-for df in (imbalance, weather, imbalance_actual):
+for df in (imbalance, weather, imbalance_actual, historical_dam):
     df["datetime"] = pd.to_datetime(df["datetime"], utc=True)
     df.sort_values("datetime", inplace=True)
 
@@ -36,13 +38,21 @@ df = pd.merge_asof(
     direction="nearest",
 )
 
+# --- Third merge: result + historical_dam ---
+df = pd.merge_asof(
+    tmp,
+    historical_dam,
+    on="datetime",
+    direction="nearest",
+)
+
 print(weather.head())
 print(imbalance.head())
 # --- Feature engineering ---
 df["hour"] = df["datetime"].dt.hour + df["datetime"].dt.minute / 60  # fractional hour (15-min steps)
 df["weekend"] = df["datetime"].dt.dayofweek.isin([5, 6]).astype(int)  # Sat/Sun = 1 else 0
 
-features = ["System imbalance", "wind_speed_10m", "direct_radiation", "hour", "weekend"]
+features = ["System imbalance", "wind_speed_10m", "direct_radiation", "hour", "weekend", "price_eur_mwh"]
 target = "price_eur_mwh"
 
 # Drop missing rows
@@ -86,6 +96,7 @@ print(f"MAE: {mae:.2f}")
 # --- Predict example future point ---
 future_df = pd.DataFrame({
     "imbalance_mwh": [120],
+    "price_eur_mwh": 106.39,
     "windspeed": [7],
     "radiation": [300],
     "hour": [14.25],  # 14:15
