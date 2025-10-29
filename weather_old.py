@@ -15,29 +15,29 @@ url = "https://archive-api.open-meteo.com/v1/archive"
 params = {
     "latitude": latitude,
     "longitude": longitude,
-    "start_date": start_date,
+    "start_date": end_date,
     "end_date": end_date,
     "hourly": "wind_speed_10m,direct_radiation",
     # "timezone": "Europe/Brussels",
 }
 
-response = requests.get(url, params=params)
-response.raise_for_status()
-data = response.json()
+def weather_data():
 
-print(data)
+    response = requests.get(url, params=params)
+    response.raise_for_status()
+    data = response.json()
+    df = pd.DataFrame({
+        "datetime": data["hourly"]["time"],
+        "wind_speed_10m": data["hourly"]["wind_speed_10m"],
+        "direct_radiation": data["hourly"]["direct_radiation"]
+    })
 
-df = pd.DataFrame({
-    "datetime": data["hourly"]["time"],
-    "wind_speed_10m": data["hourly"]["wind_speed_10m"],
-    "direct_radiation": data["hourly"]["direct_radiation"]
-})
+    # Convert datetime column to actual datetime objects
+    df["datetime"] = pd.to_datetime(df["datetime"])
 
-# Convert datetime column to actual datetime objects
-df["datetime"] = pd.to_datetime(df["datetime"])
+    # Optionally set datetime as index
+    # df = df.set_index("datetime")
+    # df = df.resample("15min").interpolate()
+    df = df.set_index("datetime").resample("15min").interpolate().reset_index()
 
-# Optionally set datetime as index
-df = df.set_index("datetime")
-df = df.resample("15min").interpolate()
-
-print(df.head())
+    return df
