@@ -1,4 +1,4 @@
-datetime_utc,date,hour,minute,price_eur_mwh
+datetime_utc,date,hour,minute,price_eur_mwh_dam
 2024-05-22 00:00:00,2024-05-22,0,0,75.97
 2024-05-22 00:15:00,2024-05-22,0,15,75.97
 2024-05-22 00:30:00,2024-05-22,0,30,75.97
